@@ -1,7 +1,7 @@
 from model import Model
 from dataset import HousingDataset
 import matplotlib.pyplot as plt
-from utils import mse
+from sklearn.metrics import mean_squared_error
 import numpy as np
 
 
@@ -47,7 +47,7 @@ def main():
 
 
     y_pred = model.evaluate(test_dataset)
-    print("Test MSE:", mse(y_pred, test_dataset.y))
+    print("Test MSE:", mean_squared_error(y_pred, test_dataset.y))
 
     #Plot 
 
