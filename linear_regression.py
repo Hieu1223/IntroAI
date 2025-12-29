@@ -49,6 +49,8 @@ def main():
     y_pred = model.evaluate(test_dataset)
     print("Test MSE:", mse(y_pred, test_dataset.y))
 
+    #Plot 
+
     plt.figure()
     plt.plot(model.loss_history)
     plt.xlabel("Training Step")
