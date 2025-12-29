@@ -1,5 +1,5 @@
 from model import Model
-from dataset import HousingDataset
+from datasets import *
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
 import numpy as np
@@ -67,7 +67,7 @@ class MLP(Model):
                 self.weights[i] -= lr * dW
                 self.biases[i] -= lr * db
 
-            if step % 100 == 0:
+            if step % 50 == 0:
                 print(f"Step {step}, MSE: {loss:.4f}")
 
     def evaluate(self, dataset):
@@ -79,11 +79,11 @@ def main():
     IMG_DIR = "images/neural_network"
     os.makedirs(IMG_DIR, exist_ok=True)
 
-    train_dataset = HousingDataset(mode="train")
-    test_dataset = HousingDataset(mode="test")
+    train_dataset = AmesHousingDataset(mode="train")
+    test_dataset = AmesHousingDataset(mode="test")
 
-    model = MLP(layers=(train_dataset.n_features, 100, 1))
-    model.train(train_dataset, steps=700, lr=0.05)
+    model = MLP(layers=(train_dataset.n_features,100, 1))
+    model.train(train_dataset, steps=1000, lr=0.05)
 
     y_pred = model.evaluate(test_dataset)
     print("Test MSE:", mean_squared_error(y_pred, test_dataset.y))

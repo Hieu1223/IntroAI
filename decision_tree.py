@@ -1,5 +1,5 @@
 from model import Model
-from dataset import HousingDataset
+from datasets import *
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import mean_squared_error as mse
 import matplotlib.pyplot as plt
@@ -28,26 +28,29 @@ class DecisionTree(Model):
         if self.feature_names is None:
             print("No feature names provided.")
             return
+
         importances = self.model.feature_importances_
-        indices = np.argsort(importances)[::-1]
+        # Indices of top 5 features
+        indices = np.argsort(importances)[::-1][:5]
         names = [self.feature_names[i] for i in indices]
+        top_importances = importances[indices]
 
         plt.figure(figsize=(10,6))
-        plt.bar(range(len(importances)), importances[indices])
-        plt.xticks(range(len(importances)), names, rotation=90)
+        plt.bar(range(len(top_importances)), top_importances)
+        plt.xticks(range(len(top_importances)), names, rotation=90)
         plt.xlabel("Features")
         plt.ylabel("Importance")
-        plt.title("Decision Tree Feature Importance")
+        plt.title("Decision Tree Feature Importance (Top 5)")
         plt.tight_layout()
         plt.savefig(os.path.join(IMG_DIR, "feature_importance.png"))
         plt.close()
 
 
 def main():
-    train_dataset = HousingDataset(mode="train")
-    test_dataset = HousingDataset(mode="test")
+    train_dataset = AmesHousingDataset(mode="train",normalize=False,onehot=False)
+    test_dataset = AmesHousingDataset(mode="test",normalize=False, onehot=False)
 
-    tree = DecisionTree(max_depth=6)
+    tree = DecisionTree(max_depth=5)
     tree.train(train_dataset)
 
     # Predictions

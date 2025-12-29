@@ -1,61 +1,131 @@
-import csv
-from typing import Literal
+import pandas as pd
 import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.impute import SimpleImputer
+from sklearn.compose import ColumnTransformer
+from sklearn.preprocessing import OrdinalEncoder
 
-class HousingDataset:
-    def __init__(self, mode: Literal['train','test']='train', seed=123):
-        self.y_div_factor = 1000000.0
+
+class Dataset:
+    def __init__(self, filepath, target,
+                 drop_columns=None, drop_if_null=None, fill_mean_if_null=None,
+                 mode='train', seed=123, normalize=True, y_div_factor=100000.0,
+                 integer_categorical_columns=None, onehot_columns=None):
+        """
+        Args:
+            filepath: CSV path
+            target: name of target column
+            drop_columns: list of columns to drop entirely
+            drop_if_null: list of columns for which rows with NaN are dropped
+            fill_mean_if_null: list of columns for which NaN are filled with mean
+            mode: 'train' or 'test'
+            seed: random seed
+            normalize: whether to standardize numerical features
+            integer_categorical_columns: list of categorical columns to keep as integer labels
+            onehot_columns: list of categorical columns to one-hot encode
+        """
+        
+
         np.random.seed(seed)
+        self.mode = mode
+        self.y_div_factor = y_div_factor
 
-        with open('dataset/data.csv', 'r') as file:
-            reader = csv.reader(file)
-            header = next(reader)
+        drop_columns = drop_columns or []
+        drop_if_null = drop_if_null or []
+        fill_mean_if_null = fill_mean_if_null or []
+        integer_categorical_columns = integer_categorical_columns or []
+        onehot_columns = onehot_columns or []
 
-            # Store feature names (exclude Id and SalePrice)
-            self.feature_names = header[2:-4]
+        # Load CSV
+        df = pd.read_csv(filepath)
 
-            x, y = [], []
-            for row in reader:
-                y.append(row[1])
-                x.append(row[2:-4])
+        # Drop unwanted columns
+        df = df.drop(columns=drop_columns, errors='ignore')
 
-        def to_float(v):
-            try:
-                return float(v)
-            except ValueError:
-                return 0.0
+        # Drop rows with NaN in specific columns
+        if drop_if_null:
+            df = df.dropna(subset=drop_if_null)
 
-        x = np.array([[to_float(v) for v in row] for row in x], dtype=np.float64)
-        y = np.array([float(v) for v in y], dtype=np.float64) / self.y_div_factor
+        # Fill NaN with mean for numeric columns
+        for col in fill_mean_if_null:
+            if col in df.columns:
+                df[col] = df[col].fillna(df[col].mean())
 
-        # Shuffle dataset
-        idx = np.random.permutation(len(x))
-        x, y = x[idx], y[idx]
+        # Separate target
+        y = df[target].values / self.y_div_factor
+        X = df.drop(columns=[target])
 
-        self.n_features = x.shape[1]
-        split_idx = int(0.8 * len(x))
+        # Detect numerical columns automatically
+        self.numerical_features = X.select_dtypes(include=[np.number]).columns.tolist()
 
-        x_train, x_test = x[:split_idx], x[split_idx:]
-        y_train, y_test = y[:split_idx], y[split_idx:]
+        # Identify categorical columns for each type
+        self.integer_categorical_features = [c for c in integer_categorical_columns if c in X.columns]
+        self.onehot_features = [c for c in onehot_columns if c in X.columns]
 
-        mean = x_train.mean(axis=0)
-        std  = x_train.std(axis=0) + 1e-8
+        # Remaining categorical columns (not integer, not one-hot)
+        remaining_cats = X.select_dtypes(include=['object', 'category']).columns.tolist()
+        self.auto_onehot_features = [c for c in remaining_cats
+                                     if c not in self.integer_categorical_features
+                                     and c not in self.onehot_features]
 
+        # Preprocessing pipelines
+        num_steps = [('imputer', SimpleImputer(strategy='mean'))]
+        if normalize:
+            num_steps.append(('scaler', StandardScaler()))
+        num_transformer = Pipeline(num_steps)
+
+        cat_onehot_transformer = Pipeline([
+            ('imputer', SimpleImputer(strategy='most_frequent')),
+            ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
+        ])
+
+        cat_integer_transformer = Pipeline([
+            ('imputer', SimpleImputer(strategy='most_frequent')),
+            ('ordinal', OrdinalEncoder(handle_unknown='use_encoded_value',unknown_value=-1))
+        ])
+
+        # ColumnTransformer
+        transformers = []
+        if self.numerical_features:
+            transformers.append(('num', num_transformer, self.numerical_features))
+        if self.onehot_features + self.auto_onehot_features:
+            transformers.append(('onehot', cat_onehot_transformer, self.onehot_features + self.auto_onehot_features))
+        if self.integer_categorical_features:
+            transformers.append(('integer_cat', cat_integer_transformer, self.integer_categorical_features))
+
+        self.preprocessor = ColumnTransformer(transformers)
+
+        # Split train/test
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=seed, shuffle=True
+        )
+
+        # Fit transformer
+        self.X_train = self.preprocessor.fit_transform(X_train)
+        self.X_test = self.preprocessor.transform(X_test)
+        self.y_train = y_train
+        self.y_test = y_test
+
+        # Feature names
+        feature_names = []
+        if self.numerical_features:
+            feature_names += self.numerical_features
+        if self.onehot_features + self.auto_onehot_features:
+            onehot_names = self.preprocessor.named_transformers_['onehot'] \
+                .named_steps['onehot'].get_feature_names_out(self.onehot_features + self.auto_onehot_features)
+            feature_names += onehot_names.tolist()
+        if self.integer_categorical_features:
+            feature_names += self.integer_categorical_features
+
+        self.feature_names = np.array(feature_names)
+        self.n_features = self.X_train.shape[1]
+
+        # Assign x, y according to mode
         if mode == 'train':
-            self.x = (x_train - mean) / std
-            self.y = y_train
+            self.x = self.X_train
+            self.y = self.y_train
         else:
-            self.x = (x_test - mean) / std
-            self.y = y_test
-
-
-def main():
-    dataset = HousingDataset(mode='train')
-    print("Number of features:", dataset.n_features)
-    print("Feature names:", dataset.feature_names)
-    print("Number of samples:", len(dataset.x))
-    print(dataset.x[:2])  # print first 2 samples
-    print(dataset.y[:2])
-
-if __name__ == "__main__":
-    main()
+            self.x = self.X_test
+            self.y = self.y_test
