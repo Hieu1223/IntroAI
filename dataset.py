@@ -3,12 +3,16 @@ from typing import Literal
 import numpy as np
 
 class HousingDataset:
-    def __init__(self, mode: Literal['train','test']='train',seed = 123):
+    def __init__(self, mode: Literal['train','test']='train', seed=123):
         self.y_div_factor = 1000000.0
         np.random.seed(seed)
+
         with open('dataset/data.csv', 'r') as file:
             reader = csv.reader(file)
             header = next(reader)
+
+            # Store feature names (exclude Id and SalePrice)
+            self.feature_names = header[2:-4]
 
             x, y = [], []
             for row in reader:
@@ -24,6 +28,7 @@ class HousingDataset:
         x = np.array([[to_float(v) for v in row] for row in x], dtype=np.float64)
         y = np.array([float(v) for v in y], dtype=np.float64) / self.y_div_factor
 
+        # Shuffle dataset
         idx = np.random.permutation(len(x))
         x, y = x[idx], y[idx]
 
@@ -46,11 +51,11 @@ class HousingDataset:
 
 def main():
     dataset = HousingDataset(mode='train')
-    print(dataset.n_features)
-    print(len(dataset.x))
-    print(dataset.x)
-    print(dataset.y)
-    
+    print("Number of features:", dataset.n_features)
+    print("Feature names:", dataset.feature_names)
+    print("Number of samples:", len(dataset.x))
+    print(dataset.x[:2])  # print first 2 samples
+    print(dataset.y[:2])
 
 if __name__ == "__main__":
     main()

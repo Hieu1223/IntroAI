@@ -18,17 +18,41 @@ class RandomForest(Model):
         )
 
     def train(self, dataset):
+        # Convert dict to list in correct order
+        if hasattr(dataset, "feature_names"):
+            self.feature_names = [dataset.feature_names[i] for i in range(len(dataset.feature_names))]
+        else:
+            self.feature_names = None
         self.model.fit(dataset.x, dataset.y)
+
 
     def evaluate(self, dataset):
         return self.model.predict(dataset.x)
+
+    def plot_feature_importance(self):
+        if self.feature_names is None:
+            print("No feature names provided.")
+            return
+        importances = self.model.feature_importances_
+        indices = np.argsort(importances)[::-1]
+        names = [self.feature_names[i] for i in indices]
+
+        plt.figure(figsize=(10,6))
+        plt.bar(range(len(importances)), importances[indices])
+        plt.xticks(range(len(importances)), names, rotation=90)
+        plt.xlabel("Features")
+        plt.ylabel("Importance")
+        plt.title("Random Forest Feature Importance")
+        plt.tight_layout()
+        plt.savefig(os.path.join(IMG_DIR, "feature_importance.png"))
+        plt.close()
 
 
 def main():
     train_dataset = HousingDataset(mode="train")
     test_dataset = HousingDataset(mode="test")
 
-    rf = RandomForest(n_estimators=200, max_depth=20, seed=123)
+    rf = RandomForest(n_estimators=200, max_depth=7, seed=123)
     rf.train(train_dataset)
 
     # Predictions
@@ -38,7 +62,9 @@ def main():
     print("Train MSE:", mse(y_train_pred, train_dataset.y))
     print("Test MSE:", mse(y_test_pred, test_dataset.y))
 
-
+    # --------------------------
+    # Prediction vs Truth Plot
+    # --------------------------
     y_true_test = test_dataset.y * test_dataset.y_div_factor
     y_pred_test = y_test_pred * test_dataset.y_div_factor
 
@@ -47,13 +73,16 @@ def main():
 
     plt.figure()
     plt.scatter(y_true_test[mask], y_pred_test[mask], alpha=0.5)
-    plt.plot([low, high], [low, high], 'r--')  # y=x reference line
+    plt.plot([low, high], [low, high], 'r--')
     plt.xlabel("True Price")
     plt.ylabel("Predicted Price")
     plt.title("Random Forest: Prediction vs Ground Truth (98% clipped)")
     plt.savefig(os.path.join(IMG_DIR, "prediction_vs_truth.png"))
     plt.close()
 
+    # --------------------------
+    # Residual Plot
+    # --------------------------
     residuals = y_test_pred - test_dataset.y
     plt.figure()
     plt.scatter(y_pred_test, residuals * test_dataset.y_div_factor, alpha=0.5)
@@ -63,6 +92,11 @@ def main():
     plt.title("Random Forest: Residual Plot")
     plt.savefig(os.path.join(IMG_DIR, "residuals.png"))
     plt.close()
+
+    # --------------------------
+    # Feature Importance Plot
+    # --------------------------
+    rf.plot_feature_importance()
 
 
 if __name__ == "__main__":

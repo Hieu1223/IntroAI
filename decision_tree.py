@@ -14,12 +14,33 @@ class DecisionTree(Model):
     def __init__(self, max_depth=None):
         self.max_depth = max_depth
         self.model = DecisionTreeRegressor(max_depth=self.max_depth, random_state=123)
+        self.feature_names = None
 
     def train(self, dataset):
+        if hasattr(dataset, "feature_names"):
+            self.feature_names = dataset.feature_names
         self.model.fit(dataset.x, dataset.y)
 
-    def evaluate(self, data):
-        return self.model.predict(data.x)
+    def evaluate(self, dataset):
+        return self.model.predict(dataset.x)
+
+    def plot_feature_importance(self):
+        if self.feature_names is None:
+            print("No feature names provided.")
+            return
+        importances = self.model.feature_importances_
+        indices = np.argsort(importances)[::-1]
+        names = [self.feature_names[i] for i in indices]
+
+        plt.figure(figsize=(10,6))
+        plt.bar(range(len(importances)), importances[indices])
+        plt.xticks(range(len(importances)), names, rotation=90)
+        plt.xlabel("Features")
+        plt.ylabel("Importance")
+        plt.title("Decision Tree Feature Importance")
+        plt.tight_layout()
+        plt.savefig(os.path.join(IMG_DIR, "feature_importance.png"))
+        plt.close()
 
 
 def main():
@@ -42,13 +63,13 @@ def main():
     y_true_test = test_dataset.y * test_dataset.y_div_factor
     y_pred_test = y_test_pred * test_dataset.y_div_factor
 
-    # Clip outliers (keep central 98%)
+    # Clip outliers (central 98%)
     low, high = np.percentile(y_true_test, [1, 99])
     mask = (y_true_test >= low) & (y_true_test <= high)
 
     plt.figure()
     plt.scatter(y_true_test[mask], y_pred_test[mask], alpha=0.5)
-    plt.plot([low, high], [low, high], 'r')  # y=x reference line
+    plt.plot([low, high], [low, high], 'r--')  # y=x reference line
     plt.xlabel("True Price")
     plt.ylabel("Predicted Price")
     plt.title("Decision Tree: Prediction vs Ground Truth (98% clipped)")
@@ -61,12 +82,17 @@ def main():
     residuals = y_test_pred - test_dataset.y
     plt.figure()
     plt.scatter(y_pred_test, residuals * test_dataset.y_div_factor, alpha=0.5)
-    plt.axhline(0, color='r')
+    plt.axhline(0, color='r', linestyle='--')
     plt.xlabel("Predicted Price")
     plt.ylabel("Residual Error")
     plt.title("Decision Tree: Residual Plot")
     plt.savefig(os.path.join(IMG_DIR, "residuals.png"))
     plt.close()
+
+    # --------------------------
+    # Feature Importance Plot
+    # --------------------------
+    tree.plot_feature_importance()
 
 
 if __name__ == "__main__":
