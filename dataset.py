@@ -3,9 +3,9 @@ from typing import Literal
 import numpy as np
 
 class HousingDataset:
-    def __init__(self, mode: Literal['train','test']='train'):
+    def __init__(self, mode: Literal['train','test']='train',seed = 123):
         self.y_div_factor = 1000000.0
-
+        np.random.seed(seed)
         with open('dataset/data.csv', 'r') as file:
             reader = csv.reader(file)
             header = next(reader)
