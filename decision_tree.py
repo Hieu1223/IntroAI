@@ -5,6 +5,7 @@ from sklearn.metrics import mean_squared_error as mse
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from plot_gen import *
 
 IMG_DIR = 'images/decision_tree'
 os.makedirs(IMG_DIR, exist_ok=True)
@@ -24,32 +25,13 @@ class DecisionTree(Model):
     def evaluate(self, dataset):
         return self.model.predict(dataset.x)
 
-    def plot_feature_importance(self):
-        if self.feature_names is None:
-            print("No feature names provided.")
-            return
-
-        importances = self.model.feature_importances_
-        # Indices of top 5 features
-        indices = np.argsort(importances)[::-1][:5]
-        names = [self.feature_names[i] for i in indices]
-        top_importances = importances[indices]
-
-        plt.figure(figsize=(10,6))
-        plt.bar(range(len(top_importances)), top_importances)
-        plt.xticks(range(len(top_importances)), names, rotation=90)
-        plt.xlabel("Features")
-        plt.ylabel("Importance")
-        plt.title("Decision Tree Feature Importance (Top 5)")
-        plt.tight_layout()
-        plt.savefig(os.path.join(IMG_DIR, "feature_importance.png"))
-        plt.close()
-
 
 def main():
-    train_dataset = AmesHousingDataset(mode="train",normalize=False,onehot=False)
-    test_dataset = AmesHousingDataset(mode="test",normalize=False, onehot=False)
+    # Load datasets
+    train_dataset = AmesHousingDataset(mode="train", normalize=False, onehot=False)
+    test_dataset = AmesHousingDataset(mode="test", normalize=False, onehot=False)
 
+    # Train Decision Tree
     tree = DecisionTree(max_depth=5)
     tree.train(train_dataset)
 
@@ -57,45 +39,39 @@ def main():
     y_train_pred = tree.evaluate(train_dataset)
     y_test_pred = tree.evaluate(test_dataset)
 
+    # Print MSE
     print("Train MSE:", mse(y_train_pred, train_dataset.y))
     print("Test MSE:", mse(y_test_pred, test_dataset.y))
 
-    # --------------------------
-    # Prediction vs Truth Plot
-    # --------------------------
+    # Scale predictions and true values back to original
     y_true_test = test_dataset.y * test_dataset.y_div_factor
     y_pred_test = y_test_pred * test_dataset.y_div_factor
 
-    # Clip outliers (central 98%)
-    low, high = np.percentile(y_true_test, [1, 99])
-    mask = (y_true_test >= low) & (y_true_test <= high)
+    # --------------------------
+    # Use plotting functions
+    # --------------------------
+    plot_prediction_vs_truth(
+        y_true=y_true_test,
+        y_pred=y_pred_test,
+        img_path=os.path.join(IMG_DIR, "prediction_vs_truth.png"),
+        title="Decision Tree: Prediction vs Ground Truth"
+    )
 
-    plt.figure()
-    plt.scatter(y_true_test[mask], y_pred_test[mask], alpha=0.5)
-    plt.plot([low, high], [low, high], 'r--')  # y=x reference line
-    plt.xlabel("True Price")
-    plt.ylabel("Predicted Price")
-    plt.title("Decision Tree: Prediction vs Ground Truth (98% clipped)")
-    plt.savefig(os.path.join(IMG_DIR, "prediction_vs_truth.png"))
-    plt.close()
+    plot_residuals(
+        y_true=y_true_test,
+        y_pred=y_pred_test,
+        img_path=os.path.join(IMG_DIR, "residuals.png"),
+        title="Decision Tree: Residual Plot"
+    )
 
-    # --------------------------
-    # Residual Plot
-    # --------------------------
-    residuals = y_test_pred - test_dataset.y
-    plt.figure()
-    plt.scatter(y_pred_test, residuals * test_dataset.y_div_factor, alpha=0.5)
-    plt.axhline(0, color='r', linestyle='--')
-    plt.xlabel("Predicted Price")
-    plt.ylabel("Residual Error")
-    plt.title("Decision Tree: Residual Plot")
-    plt.savefig(os.path.join(IMG_DIR, "residuals.png"))
-    plt.close()
+    plot_feature_importance(
+        model=tree.model,
+        feature_names=train_dataset.feature_names,
+        img_path=os.path.join(IMG_DIR, "feature_importance.png"),
+        top_n=5,
+        title="Decision Tree Feature Importance"
+    )
 
-    # --------------------------
-    # Feature Importance Plot
-    # --------------------------
-    tree.plot_feature_importance()
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ from sklearn.metrics import mean_squared_error as mse
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-
+from plot_gen import *
 IMG_DIR = 'images/random_forest'
 os.makedirs(IMG_DIR, exist_ok=True)
 
@@ -57,49 +57,35 @@ def main():
 
     rf = RandomForest(n_estimators=200, max_depth=7, seed=123)
     rf.train(train_dataset)
-
+    
     # Predictions
     y_train_pred = rf.evaluate(train_dataset)
     y_test_pred = rf.evaluate(test_dataset)
-
     print("Train MSE:", mse(y_train_pred, train_dataset.y))
     print("Test MSE:", mse(y_test_pred, test_dataset.y))
 
-    # --------------------------
-    # Prediction vs Truth Plot
-    # --------------------------
+    # Scale back to original price
     y_true_test = test_dataset.y * test_dataset.y_div_factor
     y_pred_test = y_test_pred * test_dataset.y_div_factor
 
-    low, high = np.percentile(y_true_test, [1, 99])
-    mask = (y_true_test >= low) & (y_true_test <= high)
+    # Plots
+    plot_prediction_vs_truth(
+        y_true_test, y_pred_test, 
+        os.path.join(IMG_DIR, "prediction_vs_truth.png"),
+        title="Random Forest: Prediction vs Ground Truth"
+    )
 
-    plt.figure()
-    plt.scatter(y_true_test[mask], y_pred_test[mask], alpha=0.5)
-    plt.plot([low, high], [low, high], 'r--')
-    plt.xlabel("True Price")
-    plt.ylabel("Predicted Price")
-    plt.title("Random Forest: Prediction vs Ground Truth (98% clipped)")
-    plt.savefig(os.path.join(IMG_DIR, "prediction_vs_truth.png"))
-    plt.close()
+    plot_residuals(
+        y_true_test, y_pred_test, 
+        os.path.join(IMG_DIR, "residuals.png"),
+        title="Random Forest: Residual Plot"
+    )
 
-    # --------------------------
-    # Residual Plot
-    # --------------------------
-    residuals = y_test_pred - test_dataset.y
-    plt.figure()
-    plt.scatter(y_pred_test, residuals * test_dataset.y_div_factor, alpha=0.5)
-    plt.axhline(0, color='r', linestyle='--')
-    plt.xlabel("Predicted Price")
-    plt.ylabel("Residual Error")
-    plt.title("Random Forest: Residual Plot")
-    plt.savefig(os.path.join(IMG_DIR, "residuals.png"))
-    plt.close()
+    plot_feature_importance(
+        rf.model, train_dataset.feature_names, 
+        os.path.join(IMG_DIR, "feature_importance.png"),
+        top_n=5, title="Random Forest Feature Importance")
 
-    # --------------------------
-    # Feature Importance Plot
-    # --------------------------
-    rf.plot_feature_importance()
 
 
 if __name__ == "__main__":

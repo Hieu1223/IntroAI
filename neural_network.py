@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
 import numpy as np
 import os
+from plot_gen import *
 
 class MLP(Model):
     def __init__(self, layers=(13, 16, 1)):
@@ -79,49 +80,45 @@ def main():
     IMG_DIR = "images/neural_network"
     os.makedirs(IMG_DIR, exist_ok=True)
 
+    # Load datasets
     train_dataset = AmesHousingDataset(mode="train")
     test_dataset = AmesHousingDataset(mode="test")
 
-    model = MLP(layers=(train_dataset.n_features,100, 1))
+    # Train MLP
+    model = MLP(layers=(train_dataset.n_features, 100, 1))
     model.train(train_dataset, steps=1000, lr=0.05)
+
 
     y_pred = model.evaluate(test_dataset)
     print("Test MSE:", mean_squared_error(y_pred, test_dataset.y))
 
+
     y_pred_flat = y_pred.flatten()
     y_true_flat = (test_dataset.y * test_dataset.y_div_factor).flatten()
-
-    plt.figure()
-    plt.plot(model.loss_history)
-    plt.xlabel("Training Step")
-    plt.ylabel("MSE Loss")
-    plt.title("Training Loss Curve")
-    plt.savefig(os.path.join(IMG_DIR, "loss_curve.png"))
-    plt.close()
-
     y_pred_plot = y_pred_flat * test_dataset.y_div_factor
-    low, high = np.percentile(y_true_flat, [1, 99])
-    mask = (y_true_flat >= low) & (y_true_flat <= high)
-
-    plt.figure()
-    plt.scatter(y_true_flat[mask], y_pred_plot[mask], alpha=0.5)
-    plt.plot([low, high], [low, high], color='r')
-    plt.xlabel("True Price")
-    plt.ylabel("Predicted Price")
-    plt.title("Prediction vs Ground Truth (98% clipped)")
-    plt.savefig(os.path.join(IMG_DIR, "prediction_vs_truth.png"))
-    plt.close()
 
 
-    residuals = (y_pred_flat - test_dataset.y.flatten()) * test_dataset.y_div_factor
-    plt.figure()
-    plt.scatter(y_pred_plot, residuals, alpha=0.5)
-    plt.axhline(0, color='r')
-    plt.xlabel("Predicted Price")
-    plt.ylabel("Residual Error")
-    plt.title("Residual Plot")
-    plt.savefig(os.path.join(IMG_DIR, "residuals.png"))
-    plt.close()
+    plot_loss_curve(
+        loss_history=model.loss_history,
+        img_path=os.path.join(IMG_DIR, "loss_curve.png"),
+        title="MLP Training Loss Curve"
+    )
+
+
+    plot_prediction_vs_truth(
+        y_true=y_true_flat,
+        y_pred=y_pred_plot,
+        img_path=os.path.join(IMG_DIR, "prediction_vs_truth.png"),
+        clip_percentiles=(1,99),
+        title="MLP: Prediction vs Ground Truth"
+    )
+
+    plot_residuals(
+        y_true=y_true_flat,
+        y_pred=y_pred_plot,
+        img_path=os.path.join(IMG_DIR, "residuals.png"),
+        title="MLP: Residual Plot"
+    )
 
 if __name__ == "__main__":
     main()

@@ -3,7 +3,8 @@ from datasets import *
 import matplotlib.pyplot as plt
 from sklearn.metrics import mean_squared_error
 import numpy as np
-
+import os
+from plot_gen import *
 
 class LinearRegression(Model):
     def __init__(self, n_features):
@@ -39,80 +40,61 @@ class LinearRegression(Model):
 def main():
     np.random.seed(123)
     IMG_DIR = 'images/linear_regression'
+    os.makedirs(IMG_DIR, exist_ok=True)
+
+    # Load datasets
     train_dataset = AmesHousingDataset(mode='train')
     test_dataset = AmesHousingDataset(mode='test')
 
+    # Train Linear Regression
     model = LinearRegression(n_features=train_dataset.n_features)
     model.train(train_dataset, steps=100, lr=0.05)
 
+    # Predictions
     y_pred = model.evaluate(test_dataset)
     print("Test MSE:", mean_squared_error(y_pred, test_dataset.y))
 
-    # --------------------------
-    # Loss Curve
-    # --------------------------
-    plt.figure()
-    plt.plot(model.loss_history)
-    plt.xlabel("Training Step")
-    plt.ylabel("MSE Loss")
-    plt.title("Training Loss Curve")
-    plt.savefig(IMG_DIR + '/' +"loss_curve.png")
-    plt.close()
-
-    # --------------------------
-    # Prediction vs Truth
-    # --------------------------
-    plt.figure()
+    # Scale back to original prices
     y_true = test_dataset.y * test_dataset.y_div_factor
     y_pred_plot = y_pred * test_dataset.y_div_factor
-    low, high = np.percentile(y_true, [1, 99])
-    mask = (y_true >= low) & (y_true <= high)
-
-    plt.scatter(y_true[mask], y_pred_plot[mask], alpha=0.5)
-    plt.plot([low, high], [low, high], 'r--')  # y = x reference line
-    plt.xlabel("True Price")
-    plt.ylabel("Predicted Price")
-    plt.title("Prediction vs Ground Truth (98% clipped)")
-    plt.savefig(IMG_DIR + "/prediction_vs_truth.png")
-    plt.close()
 
     # --------------------------
+    # Plots using modular functions
+    # --------------------------
+    # Loss Curve
+    plot_loss_curve(
+        loss_history=model.loss_history,
+        img_path=os.path.join(IMG_DIR, "loss_curve.png"),
+        title="Linear Regression Training Loss Curve"
+    )
+
+    # Prediction vs Truth
+    plot_prediction_vs_truth(
+        y_true=y_true,
+        y_pred=y_pred_plot,
+        img_path=os.path.join(IMG_DIR, "prediction_vs_truth.png"),
+        clip_percentiles=(1,99),
+        title="Linear Regression: Prediction vs Ground Truth"
+    )
+
     # Residual Plot
-    # --------------------------
-    residuals = y_pred - test_dataset.y
-    plt.figure()
-    plt.scatter(y_pred, residuals, alpha=0.5)
-    plt.axhline(0, color='r', linestyle='--')
-    plt.xlabel("Predicted Price")
-    plt.ylabel("Residual Error")
-    plt.title("Residual Plot")
-    plt.savefig(IMG_DIR + '/' +"residuals.png")
-    plt.close()
+    residuals = (y_pred - test_dataset.y) * test_dataset.y_div_factor
+    plot_residuals(
+        y_true=y_true,
+        y_pred=y_pred_plot,
+        img_path=os.path.join(IMG_DIR, "residuals.png"),
+        title="Linear Regression: Residual Plot"
+    )
 
-    # --------------------------
-    # Feature Coefficients
-    # --------------------------
-    coefs = model.w.flatten()  # ensure it's 1D
+    plot_top_linear_coefficients(
+        model=model,
+        train_dataset=train_dataset,
+        img_path=os.path.join(IMG_DIR, "feature_coefficients.png"),
+        top_n=5,
+        title="Top 5 Most Significant Linear Regression Coefficients"
+    )
 
-    # Get indices of 5 largest absolute coefficients
-    top5_idx = np.argsort(np.abs(coefs))[-5:][::-1]  # descending order
 
-    # Get corresponding feature names
-    if hasattr(train_dataset, 'feature_names'):
-        feature_names = train_dataset.feature_names[top5_idx]
-    else:
-        feature_names = [f"Feature {i}" for i in top5_idx]
-
-    # Plot
-    plt.figure(figsize=(10,6))
-    plt.bar(range(5), coefs[top5_idx])
-    plt.xticks(range(5), feature_names, rotation=90)
-    plt.xlabel("Features")
-    plt.ylabel("Coefficient Value")
-    plt.title("Top 5 Most Significant Linear Regression Coefficients")
-    plt.tight_layout()
-    plt.savefig(IMG_DIR + "/feature_coefficients.png")
-    plt.close()
 
 
 
