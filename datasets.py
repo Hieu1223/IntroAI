@@ -91,7 +91,7 @@ class AmesHousingDataset(Dataset):
 
 
 def main():
-    dataset = AmesHousingDataset(mode='train')
+    dataset = AmesHousingDataset(mode='train',onehot=True)
     print("Number of features:", dataset.n_features)
     print("Feature names:", dataset.feature_names)
     print("Number of samples:", len(dataset.x))

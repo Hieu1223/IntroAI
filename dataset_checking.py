@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_csv('dataset/kc_final.csv')
+df = pd.read_csv('dataset/ames.csv')
 
 # Check for missing values
 missing = df.isnull().sum()
