@@ -1,5 +1,5 @@
 from model import Model
-from datasets import *
+from ames_dataset import *
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.metrics import mean_squared_error as mse
 import matplotlib.pyplot as plt
@@ -28,11 +28,11 @@ class DecisionTree(Model):
 
 def main():
     # Load datasets
-    train_dataset = AmesHousingDataset(mode="train", normalize=False, onehot=False)
-    test_dataset = AmesHousingDataset(mode="test", normalize=False, onehot=False)
+    train_dataset = AmesHousingDataset(mode="train")
+    test_dataset = AmesHousingDataset(mode="test")
 
     # Train Decision Tree
-    tree = DecisionTree(max_depth=5)
+    tree = DecisionTree(max_depth=7)
     tree.train(train_dataset)
 
     # Predictions

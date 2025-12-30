@@ -1,5 +1,5 @@
 from model import Model
-from datasets import *
+from ames_dataset import *
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error as mse
 import matplotlib.pyplot as plt
@@ -32,10 +32,10 @@ class RandomForest(Model):
 
 
 def main():
-    train_dataset = AmesHousingDataset(mode="train",normalize=False,onehot=False)
-    test_dataset = AmesHousingDataset(mode="test",normalize=False,onehot=False)
+    train_dataset = AmesHousingDataset(mode="train")
+    test_dataset = AmesHousingDataset(mode="test")
 
-    rf = RandomForest(n_estimators=400, max_depth=10, seed=123)
+    rf = RandomForest(n_estimators=200, max_depth=10, seed=123)
     rf.train(train_dataset)
     
     # Predictions
