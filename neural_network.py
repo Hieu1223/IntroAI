@@ -80,11 +80,9 @@ def main():
     IMG_DIR = "images/neural_network"
     os.makedirs(IMG_DIR, exist_ok=True)
 
-    # Load datasets
     train_dataset = AmesHousingDataset(mode="train")
     test_dataset = AmesHousingDataset(mode="test")
 
-    # Train MLP
     model = MLP(layers=(train_dataset.n_features, 100, 1))
     model.train(train_dataset, steps=1000, lr=0.05)
 

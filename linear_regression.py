@@ -42,33 +42,24 @@ def main():
     IMG_DIR = 'images/linear_regression'
     os.makedirs(IMG_DIR, exist_ok=True)
 
-    # Load datasets
     train_dataset = AmesHousingDataset(mode='train')
     test_dataset = AmesHousingDataset(mode='test')
 
-    # Train Linear Regression
     model = LinearRegression(n_features=train_dataset.n_features)
     model.train(train_dataset, steps=100, lr=0.05)
 
-    # Predictions
     y_pred = model.evaluate(test_dataset)
     print("Test MSE:", mean_squared_error(y_pred, test_dataset.y))
 
-    # Scale back to original prices
     y_true = test_dataset.y * test_dataset.y_div_factor
     y_pred_plot = y_pred * test_dataset.y_div_factor
 
-    # --------------------------
-    # Plots using modular functions
-    # --------------------------
-    # Loss Curve
     plot_loss_curve(
         loss_history=model.loss_history,
         img_path=os.path.join(IMG_DIR, "loss_curve.png"),
         title="Linear Regression Training Loss Curve"
     )
 
-    # Prediction vs Truth
     plot_prediction_vs_truth(
         y_true=y_true,
         y_pred=y_pred_plot,
@@ -77,8 +68,6 @@ def main():
         title="Linear Regression: Prediction vs Ground Truth"
     )
 
-    # Residual Plot
-    residuals = (y_pred - test_dataset.y) * test_dataset.y_div_factor
     plot_residuals(
         y_true=y_true,
         y_pred=y_pred_plot,

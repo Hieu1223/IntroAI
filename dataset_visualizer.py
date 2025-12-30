@@ -3,32 +3,35 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import math
 
-# -----------------------------
-# 1. Load dataset
-# -----------------------------
 df = pd.read_csv('dataset/ames.csv')
 
-# -----------------------------
-# 2. Detect categorical columns
-# -----------------------------
-cat_cols = df.select_dtypes(include=['object']).columns
-num_cols = len(cat_cols)
-print(f"Number of categorical columns: {num_cols}")
+print("=== Dataset Basic Statistics ===")
+print(f"Number of rows: {df.shape[0]}")
+print(f"Number of columns: {df.shape[1]}")
+print("\nColumn types:")
+print(df.dtypes.value_counts())
 
-# -----------------------------
-# 3. Grid layout for plotting
-# -----------------------------
-cols_per_row = 4  # adjust to your screen or image size
-rows = math.ceil(num_cols / cols_per_row)
+# Categorical stats
+cat_cols = df.select_dtypes(include=['object']).columns
+print(f"\nNumber of categorical columns: {len(cat_cols)}")
+for col in cat_cols:
+    top_values = df[col].value_counts().head(5)
+    print(f"Top values for {col}:")
+    print(top_values.to_string())
+    print("---")
+
+# Numerical stats
+num_cols = df.select_dtypes(include=['number']).columns
+print(f"\nNumber of numerical columns: {len(num_cols)}")
+print(df[num_cols].describe().T[['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max']])
+
+cols_per_row = 7 
+rows = math.ceil(len(cat_cols) / cols_per_row)
 
 fig, axes = plt.subplots(rows, cols_per_row, figsize=(cols_per_row*5, rows*4))
-axes = axes.flatten()  # flatten 2D array for easy indexing
+axes = axes.flatten() 
 
-# -----------------------------
-# 4. Plot each categorical column
-# -----------------------------
 for i, col in enumerate(cat_cols):
-    # Optional: limit to top 10 values to avoid overcrowding
     top_n = 10
     order = df[col].value_counts().index[:top_n]
     
@@ -47,9 +50,7 @@ for j in range(i+1, len(axes)):
 
 plt.tight_layout()
 
-# -----------------------------
-# 5. Save figure as high-resolution image
-# -----------------------------
+
 output_file = "images/dataset/categorical_summary.png"
 plt.savefig(output_file, dpi=300)
 print(f"Saved categorical summary plot as {output_file}")

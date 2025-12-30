@@ -17,16 +17,13 @@ class AmesHousingDataset:
         # Load CSV
         df = pd.read_csv(filepath)
 
-        # Drop ID columns
         df = df.drop(columns=["Id", "PID"], errors='ignore')
 
         # Separate target
         y = df[target].values/self.y_div_factor
         df = df.drop(columns=[target])
 
-        # --------------------------
         # Ordinal mappings
-        # --------------------------
         qual_mapping = {'Ex':5, 'Gd':4, 'TA':3, 'Fa':2, 'Po':1, 'NA':0}
         bsmt_exposure_mapping = {'Gd':4, 'Av':3, 'Mn':2, 'No':1, 'NA':0}
         land_contour_mapping = {'Lvl':3, 'HLS':2, 'Bnk':2, 'Low':1}
@@ -60,9 +57,8 @@ class AmesHousingDataset:
             if col in df.columns:
                 df[col] = df[col].fillna('NA').map(mapping).fillna(0)
 
-        # --------------------------
         # Nominal categorical fields to one-hot encode
-        # --------------------------
+
         onehot_columns = [
             'MS SubClass', 'MS Zoning', 'Street', 'Alley', 'Utilities', 'Lot Config',
             'Neighborhood', 'Bldg Type', 'House Style', 'Roof Style', 'Roof Matl',
@@ -77,9 +73,7 @@ class AmesHousingDataset:
         onehot_data = encoder.fit_transform(df[onehot_columns])
         onehot_feature_names = encoder.get_feature_names_out(onehot_columns)
 
-        # --------------------------
         # Numeric columns
-        # --------------------------
         numeric_cols = [col for col in df.columns if col not in onehot_columns]
         numeric_data = df[numeric_cols].fillna(0).values
 
@@ -90,9 +84,8 @@ class AmesHousingDataset:
         self.feature_names = np.array(self.feature_names)
 
         
-        # --------------------------
         # Train/Test Split
-        # --------------------------
+
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=test_size, random_state=random_state
         )
@@ -111,7 +104,7 @@ class AmesHousingDataset:
             raise ValueError("mode must be 'train' or 'test'")
 
 def main():
-    dataset = AmesHousingDataset(mode='train')  # 'train' or 'test'
+    dataset = AmesHousingDataset(mode='train')
     
     print("=== Dataset Statistics ===")
     print(f"Number of samples: {dataset.x.shape[0]}")
@@ -120,10 +113,6 @@ def main():
     print(f"Target (SalePrice) std: {dataset.y.std() :.2f}")
     print(f"Target (SalePrice) min: {dataset.y.min() :.2f}")
     print(f"Target (SalePrice) max: {dataset.y.max() :.2f}")
-    
-    print("\n=== Feature Sample ===")
-    for i, name in enumerate(dataset.feature_names[:10]):  # Show first 10 features
-        print(f"{name}: {dataset.x[0, i]:.3f}")
 
 
 if __name__ == '__main__':

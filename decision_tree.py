@@ -27,19 +27,15 @@ class DecisionTree(Model):
 
 
 def main():
-    # Load datasets
     train_dataset = AmesHousingDataset(mode="train")
     test_dataset = AmesHousingDataset(mode="test")
 
-    # Train Decision Tree
     tree = DecisionTree(max_depth=7)
     tree.train(train_dataset)
 
-    # Predictions
     y_train_pred = tree.evaluate(train_dataset)
     y_test_pred = tree.evaluate(test_dataset)
 
-    # Print MSE
     print("Train MSE:", mse(y_train_pred, train_dataset.y))
     print("Test MSE:", mse(y_test_pred, test_dataset.y))
 
@@ -47,9 +43,6 @@ def main():
     y_true_test = test_dataset.y * test_dataset.y_div_factor
     y_pred_test = y_test_pred * test_dataset.y_div_factor
 
-    # --------------------------
-    # Use plotting functions
-    # --------------------------
     plot_prediction_vs_truth(
         y_true=y_true_test,
         y_pred=y_pred_test,
@@ -71,7 +64,9 @@ def main():
         top_n=5,
         title="Decision Tree Feature Importance"
     )
-
+    print_top_feature_importance(
+        tree.model, train_dataset.feature_names
+    )
 
 
 if __name__ == "__main__":

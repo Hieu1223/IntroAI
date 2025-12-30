@@ -18,7 +18,6 @@ class RandomForest(Model):
         )
 
     def train(self, dataset):
-        # Convert dict to list in correct order
         if hasattr(dataset, "feature_names"):
             self.feature_names = [dataset.feature_names[i] for i in range(len(dataset.feature_names))]
         else:
@@ -38,17 +37,14 @@ def main():
     rf = RandomForest(n_estimators=200, max_depth=10, seed=123)
     rf.train(train_dataset)
     
-    # Predictions
     y_train_pred = rf.evaluate(train_dataset)
     y_test_pred = rf.evaluate(test_dataset)
     print("Train MSE:", mse(y_train_pred, train_dataset.y))
     print("Test MSE:", mse(y_test_pred, test_dataset.y))
 
-    # Scale back to original price
     y_true_test = test_dataset.y * test_dataset.y_div_factor
     y_pred_test = y_test_pred * test_dataset.y_div_factor
 
-    # Plots
     plot_prediction_vs_truth(
         y_true_test, y_pred_test, 
         os.path.join(IMG_DIR, "prediction_vs_truth.png"),
@@ -65,7 +61,10 @@ def main():
         rf.model, train_dataset.feature_names, 
         os.path.join(IMG_DIR, "feature_importance.png"),
         top_n=5, title="Random Forest Feature Importance")
-
+    
+    print_top_feature_importance(
+        rf.model, train_dataset.feature_names
+    )
 
 
 if __name__ == "__main__":
