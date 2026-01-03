@@ -14,7 +14,7 @@ class AmesHousingDataset:
 
         drop_cols = [
             "Id", "PID", 'Pool QC', 'Misc Feature', 'Alley', 'Fence',
-            'Condition 2', 'Utilities', 'Bsmt Exposure', 'Heating', 'Garage Qual'
+            'Condition 2', 'Utilities', 'Bsmt Exposure', 'Heating', 'Garage Qual','Neighborhood'
         ]
         df = df.drop(columns=drop_cols, errors='ignore')
 
@@ -68,7 +68,7 @@ class AmesHousingDataset:
 
         onehot_columns = [
             'MS SubClass', 'MS Zoning', 'Street', 'Lot Config',
-            'Neighborhood', 'Bldg Type', 'House Style', 'Roof Style',
+            'Bldg Type', 'House Style', 'Roof Style',
             'Exterior 1st', 'Exterior 2nd', 'Mas Vnr Type', 'Foundation',
             'Central Air', 'BsmtFin Type 1', 'BsmtFin Type 2',
             'Garage Type', 'Garage Finish', 'Paved Drive', 'Sale Type', 'Sale Condition'
