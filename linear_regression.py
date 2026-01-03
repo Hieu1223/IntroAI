@@ -30,6 +30,9 @@ class LinearRegression(Model):
 
             if step % 50 == 0:
                 print(f"Step {step}, MSE: {loss:.4f}")
+            if step == steps-1:
+                print(f"Step {step}, MSE: {loss:.4f}")
+                return
 
     def evaluate(self, data):
         return data.x @ self.w + self.b

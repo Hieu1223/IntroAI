@@ -70,6 +70,9 @@ class MLP(Model):
 
             if step % 50 == 0:
                 print(f"Step {step}, MSE: {loss:.4f}")
+            if step == steps-1:
+                print(f"Step {step}, MSE: {loss:.4f}")
+                return
 
     def evaluate(self, dataset):
         return self.forward(dataset.x)

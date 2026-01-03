@@ -11,6 +11,16 @@ print(f"Number of columns: {df.shape[1]}")
 print("\nColumn types:")
 print(df.dtypes.value_counts())
 
+# Print missing values
+print("\n=== Missing Values per Column ===")
+missing_counts = df.isnull().sum()
+missing_percent = (missing_counts / df.shape[0]) * 100
+missing_df = pd.DataFrame({'Missing Count': missing_counts, 'Missing %': missing_percent})
+missing_df = missing_df[missing_df['Missing Count'] > 0]  # Only show columns with missing values
+print(missing_df.sort_values(by='Missing Count', ascending=False))
+
+
+
 # Categorical stats
 cat_cols = df.select_dtypes(include=['object']).columns
 print(f"\nNumber of categorical columns: {len(cat_cols)}")
@@ -22,8 +32,19 @@ for col in cat_cols:
 
 # Numerical stats
 num_cols = df.select_dtypes(include=['number']).columns
-print(f"\nNumber of numerical columns: {len(num_cols)}")
-print(df[num_cols].describe().T[['count', 'mean', 'std', 'min', '25%', '50%', '75%', 'max']])
+
+# Compute descriptive statistics
+num_summary = df[num_cols].describe().T[['count', 'min', '25%', '50%', '75%', 'max']]
+
+# Sort by descending max, then ascending min
+num_summary_sorted = num_summary.sort_values(by=['max', 'min'], ascending=[False, True])
+
+# Remove the first 2 rows
+num_summary_sorted = num_summary_sorted.iloc[2:]
+
+# Display number of numerical columns and sorted summary
+print(f"\nNumber of numerical columns: {len(num_cols)}\n")
+print(num_summary_sorted)
 
 cols_per_row = 7 
 rows = math.ceil(len(cat_cols) / cols_per_row)
