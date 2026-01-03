@@ -93,10 +93,9 @@ class AmesHousingDataset:
 
         scaler = StandardScaler()
         self.x = scaler.fit_transform(X_train) if mode == 'train' else scaler.fit_transform(X_train)
-        # Note: In production, always transform test with train's scaler. 
-        # For this setup:
+
         if mode == 'test':
-            scaler.fit(X_train) # Fit on train
+            scaler.fit(X_train)
             self.x = scaler.transform(X_test)
             self.y = y_test
         else:
@@ -113,14 +112,11 @@ def main():
     print(f"Target (SalePrice) min: {dataset.y.min():.2f}")
     print(f"Target (SalePrice) max: {dataset.y.max():.2f}\n")
 
-    # Numerical stats
     num_cols = pd.DataFrame(dataset.x, columns=dataset.feature_names).select_dtypes(include=[np.number]).columns
     num_summary = pd.DataFrame(dataset.x, columns=dataset.feature_names)[num_cols].describe().T[['count','min','25%','50%','75%','max']]
     
-    # Sort by descending max, then ascending min and remove first 2 rows
     num_summary_sorted = num_summary.sort_values(by=['max','min'], ascending=[False, True]).iloc[:20]
 
-    # Format numbers in scientific notation
     num_summary_sorted = num_summary_sorted.applymap(lambda x: f"{x:.2e}")
 
     print("=== Numerical Feature Summary (sorted) ===")
