@@ -9,6 +9,10 @@ from plot_gen import *
 IMG_DIR = 'images/random_forest'
 os.makedirs(IMG_DIR, exist_ok=True)
 
+OPTIMIAL_ESTIMATORS = 18
+OPTIMIAL_DEPTH = 150
+
+
 class RandomForest(Model):
     def __init__(self, n_estimators=100, max_depth=None, seed=123):
         self.model = RandomForestRegressor(
@@ -34,7 +38,29 @@ def main():
     train_dataset = AmesHousingDataset(mode="train")
     test_dataset = AmesHousingDataset(mode="test")
 
-    rf = RandomForest(n_estimators=200, max_depth=10, seed=123)
+    MAX_EXPLORE_DEPTH = 20
+    MAX_EXPLORE_ESTIMATORS = 300
+
+    depth_with_min_mse = None
+    n_estimators_with_min_mse = None
+    min_mse = float('inf')
+
+
+    for depth in range(1, MAX_EXPLORE_DEPTH):
+        for n_estimators in range(50, MAX_EXPLORE_ESTIMATORS+1, 50):
+            rf = RandomForest(n_estimators=n_estimators, max_depth=depth, seed=123)
+            rf.train(train_dataset)
+            y_test_pred = rf.evaluate(test_dataset)
+            current_mse = mse(y_test_pred, test_dataset.y)
+            print(f"Max depth {depth}, Estimators {n_estimators}: Test MSE = {current_mse}")
+            if current_mse < min_mse:
+                min_mse = current_mse
+                depth_with_min_mse = depth
+                n_estimators_with_min_mse = n_estimators
+
+    print(f"\nOptimal max depth: {depth_with_min_mse}, Optimal number of estimators: {n_estimators_with_min_mse} with Test MSE = {min_mse}\n")
+
+    rf = RandomForest(n_estimators=n_estimators_with_min_mse, max_depth=depth_with_min_mse, seed=123)
     rf.train(train_dataset)
     
     y_train_pred = rf.evaluate(train_dataset)

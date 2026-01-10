@@ -10,6 +10,7 @@ from plot_gen import *
 IMG_DIR = 'images/decision_tree'
 os.makedirs(IMG_DIR, exist_ok=True)
 
+OPTIMAL_DEPTH = 7
 
 class DecisionTree(Model):
     def __init__(self, max_depth=None):
@@ -26,11 +27,26 @@ class DecisionTree(Model):
         return self.model.predict(dataset.x)
 
 
+
 def main():
     train_dataset = AmesHousingDataset(mode="train")
     test_dataset = AmesHousingDataset(mode="test")
 
-    tree = DecisionTree(max_depth=7)
+    MAX_EXPLORE_DEPTH = 50
+    
+    depth_with_min_mse = None
+    min_mse = float('inf')
+    for i in range(1,MAX_EXPLORE_DEPTH):
+        tree = DecisionTree(max_depth=i)
+        tree.train(train_dataset)
+        y_test_pred = tree.evaluate(test_dataset)
+        current_mse = mse(y_test_pred, test_dataset.y)
+        print(f"Max depth {i}: Test MSE = {current_mse}")
+        if current_mse < min_mse:
+            min_mse = current_mse
+            depth_with_min_mse = i
+    print(f"\nOptimal max depth: {depth_with_min_mse} with Test MSE = {min_mse}\n")
+    tree = DecisionTree(max_depth=depth_with_min_mse)
     tree.train(train_dataset)
 
     y_train_pred = tree.evaluate(train_dataset)
